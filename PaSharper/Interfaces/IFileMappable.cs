@@ -1,6 +1,8 @@
+using System.Linq.Expressions;
+
 namespace PaSharper.Interfaces;
 
-public interface IFileMatcher
-{
-    
+public interface IFileMappable<T>
+{ 
+    List<(string keyword, Expression<Func<T, object>> property, Func<string, object> transformer)> GetMapping();
 }

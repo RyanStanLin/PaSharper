@@ -4,6 +4,6 @@ public static class TitlePrinter
 {
     public static void PrintTitle()
     {
-        Console.WriteLine("PaSharper");
+        Console.WriteLine(Data.ConstantData.PASHARPER_TITLE);
     }
 }
