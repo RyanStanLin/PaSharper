@@ -31,15 +31,15 @@ class Program
 
         if (!string.IsNullOrEmpty(folderPath))
         {
-            var matcher = new FilePatternMatcher<IGCSE_ExamItem>(
+            var matcher = new FilePatternMatcher<IgcseExamFileInfo>(
                 inputFormat,
-                new IGCSE_ExamItem(),
+                new IgcseExamFileInfo(),
                 exactMatch: false,
                 loggerFactory
             );
             foreach (var result in matcher.MatchFiles(folderPath).Where(x=> x.IsPerfectMatch == true))
             {
-                Console.WriteLine($"\n[{result.ParsedData.File.ToCustomString()}]{result.ParsedData.Subject.SubjectID}-{result.ParsedData.ExamTime.Year}{result.ParsedData.ExamTime.Season.ToCustomString()}-" +
+                Console.WriteLine($"\n[{result.ParsedData.FileType.ToCustomString()}]{result.ParsedData.Subject.SubjectID}-{result.ParsedData.ExamTime.Year}{result.ParsedData.ExamTime.Season.ToCustomString()}-" +
                                   $"{result.ParsedData.PaperNumber}{result.ParsedData.PaperVersion}卷:");
                 /*PDFTextExtractor extractor = new PDFTextExtractor();
                 List<PDFTextExtractor.TextChunk> textChunks = extractor.ExtractTextWithPositions(result.FileDetails.FullName, 1);

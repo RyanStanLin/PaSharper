@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace PaSharper.Tools;
 
-public static class EnumExtensions
+public static class EnumExtension
 {
     public static string ToCustomString<TEnum>(this TEnum value) where TEnum : Enum
     {

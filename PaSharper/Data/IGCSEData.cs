@@ -1,18 +1,19 @@
 using System.ComponentModel;
 using System.Linq.Expressions;
 using PaSharper.Interfaces;
+using PaSharper.Tools;
 
-public class IGCSE_ExamItem : IFileMappable<IGCSE_ExamItem>
+public class IgcseExamFileInfo : IFileMappable<IgcseExamFileInfo>, IFilePairable<IgcseExamFileInfo>
 {
-    public IGCSE_Subject Subject { get; set; }
-    public IGCSE_PaperType File { get; set; }
-    public IGCSE_ExamTime ExamTime { get; set; }
+    public IgcseSubject Subject { get; set; }
+    public IgcsePaperType FileType { get; set; }
+    public IgcseExamTime ExamTime { get; set; }
     public short PaperNumber { get; set; }
     public short PaperVersion { get; set; }
 
-    public List<(string keyword, Expression<Func<IGCSE_ExamItem, object>> property, Func<string, object> transformer)> GetMapping()
+    public List<(string keyword, Expression<Func<IgcseExamFileInfo, object>> property, Func<string, object> transformer)> GetMapping()
     {
-        return new List<(string, Expression<Func<IGCSE_ExamItem, object>>, Func<string, object>)>
+        return new List<(string, Expression<Func<IgcseExamFileInfo, object>>, Func<string, object>)>
         {
             ("SubjectID", item => item.Subject.SubjectID, x => x.ToString()), 
             ("Name", item => item.Subject.Name, x => x),
@@ -21,38 +22,37 @@ public class IGCSE_ExamItem : IFileMappable<IGCSE_ExamItem>
             {
                 return x switch
                 {
-                    "s" => IGCSE_ExamSeason.MayJun, // "s" -> MayJun
-                    "m" => IGCSE_ExamSeason.FebMar, // "m" -> FebMar
-                    "w" => IGCSE_ExamSeason.OctNov, // "w" -> OctNov
+                    "s" => IgcseExamSeason.MayJun, // "s" -> MayJun
+                    "m" => IgcseExamSeason.FebMar, // "m" -> FebMar
+                    "w" => IgcseExamSeason.OctNov, // "w" -> OctNov
                 };
             }), 
-            ("PaperType", item => item.File, x =>
+            ("PaperType", item => item.FileType, x =>
             {
                 return x switch
                 {
-                    "ms" => IGCSE_PaperType.Answer, 
-                    "qp" => IGCSE_PaperType.Question,
+                    "ms" => IgcsePaperType.Answer, 
+                    "qp" => IgcsePaperType.Question,
                 };
             }), 
             ("PaperNumber", item => item.PaperNumber, x => x),
             ("PaperVersion", item => item.PaperVersion, x => x)
         };
     }
+    
+    public bool CanPairWith(IgcseExamFileInfo other)
+    {
+        return this.EqualsExcept(other, nameof(FileType)) && this.FileType != other.FileType;
+    }
 }
 
-public class IGCSE_Subject
+public class IgcseSubject
 {
     public string Name { get; set; }
     public string SubjectID { get; set; }
 }
 
-public class IGCSE_FileItem
-{
-    public string Path { get; set; }
-    public IGCSE_PaperType Type { get; set; }
-}
-
-public enum IGCSE_PaperType
+public enum IgcsePaperType
 {
     [Description("试题")]
     Question,
@@ -60,13 +60,13 @@ public enum IGCSE_PaperType
     Answer
 }
 
-public class IGCSE_ExamTime
+public class IgcseExamTime
 {
     public string Year { get; set; }
-    public IGCSE_ExamSeason Season { get; set; }
+    public IgcseExamSeason Season { get; set; }
 }
 
-public enum IGCSE_ExamSeason
+public enum IgcseExamSeason
 {
     [Description("冬考")]
     OctNov,
