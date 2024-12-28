@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Linq.Expressions;
-using PaSharper.Interfaces;
 using PaSharper.Extensions;
+using PaSharper.Interfaces;
 
 namespace PaSharper.Data;
 
@@ -14,38 +14,39 @@ public class IgcseExamFileInfo : IFileMappable<IgcseExamFileInfo>, IFilePairable
     public short PaperNumber { get; set; }
     public short PaperVersion { get; set; }
 
-    public List<(string keyword, Expression<Func<IgcseExamFileInfo, object>> property, Func<string, object> transformer)> GetMapping()
+    public List<(string keyword, Expression<Func<IgcseExamFileInfo, object>> property, Func<string, object> transformer
+        )> GetMapping()
     {
         return new List<(string, Expression<Func<IgcseExamFileInfo, object>>, Func<string, object>)>
         {
-            ("SubjectID", item => item.Subject.SubjectID, x => x.ToString()), 
+            ("SubjectID", item => item.Subject.SubjectID, x => x.ToString()),
             ("Name", item => item.Subject.Name, x => x),
-            ("Year", item => item.ExamTime.Year, x => (int.Parse(x) + 2000).ToString()), 
+            ("Year", item => item.ExamTime.Year, x => (int.Parse(x) + 2000).ToString()),
             ("Season", item => item.ExamTime.Season, x =>
             {
                 return x switch
                 {
                     "s" => IgcseExamSeason.MayJun, // "s" -> MayJun
                     "m" => IgcseExamSeason.FebMar, // "m" -> FebMar
-                    "w" => IgcseExamSeason.OctNov, // "w" -> OctNov
+                    "w" => IgcseExamSeason.OctNov // "w" -> OctNov
                 };
-            }), 
+            }),
             ("PaperType", item => item.FileType, x =>
             {
                 return x switch
                 {
-                    "ms" => IgcsePaperType.Answer, 
-                    "qp" => IgcsePaperType.Question,
+                    "ms" => IgcsePaperType.Answer,
+                    "qp" => IgcsePaperType.Question
                 };
-            }), 
+            }),
             ("PaperNumber", item => item.PaperNumber, x => x),
             ("PaperVersion", item => item.PaperVersion, x => x)
         };
     }
-    
+
     public bool CanPairWith(IgcseExamFileInfo other)
     {
-        return this.EqualsExcept<IgcseExamFileInfo>(other, nameof(FileType),nameof(File)) && this.FileType != other.FileType;
+        return this.EqualsExcept(other, x => x.FileType, y => y.File) && FileType != other.FileType;
     }
 }
 
@@ -57,10 +58,8 @@ public class IgcseSubject
 
 public enum IgcsePaperType
 {
-    [Description("试题")]
-    Question,
-    [Description("答案")]
-    Answer
+    [Description("试题")] Question,
+    [Description("答案")] Answer
 }
 
 public class IgcseExamTime
@@ -71,10 +70,7 @@ public class IgcseExamTime
 
 public enum IgcseExamSeason
 {
-    [Description("冬考")]
-    OctNov,
-    [Description("春考")]
-    FebMar,
-    [Description("夏考")]
-    MayJun
+    [Description("冬考")] OctNov,
+    [Description("春考")] FebMar,
+    [Description("夏考")] MayJun
 }

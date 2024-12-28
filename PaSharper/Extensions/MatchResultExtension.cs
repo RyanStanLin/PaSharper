@@ -4,7 +4,8 @@ namespace PaSharper.Extensions;
 
 public static class MatchResultExtension
 {
-    public static IEnumerable<MatchResult<T>> ThenForEach<T>(this IEnumerable<MatchResult<T>> matchResults, Action<MatchResult<T>> action)
+    public static IEnumerable<MatchResult<T>> ThenForEach<T>(this IEnumerable<MatchResult<T>> matchResults,
+        Action<MatchResult<T>> action)
     {
         foreach (var matchResult in matchResults)
         {

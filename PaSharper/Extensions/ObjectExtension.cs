@@ -1,30 +1,32 @@
+using System.Linq.Expressions;
 using System.Reflection;
-using PaSharper.Data;
 
 namespace PaSharper.Extensions;
 
-public static class ObjectExtensions
+public static class ObjectExtension
 {
-    /// <summary>
-    /// Compares two objects of the same type for equality, ignoring specified properties.
-    /// </summary>
-    /// <typeparam name="T">The type of objects being compared.</typeparam>
-    /// <param name="obj1">The first object to compare.</param>
-    /// <param name="obj2">The second object to compare.</param>
-    /// <param name="excludedProperties">The names of properties to exclude from comparison.</param>
-    /// <returns>True if all properties (except excluded ones) are equal; otherwise, false.</returns>
-    public static bool EqualsExcept<T>(this T obj1, T obj2, params string[] excludedProperties)
+    public static bool EqualsExcept<T>(this T obj1, T obj2, params Expression<Func<T, object>>[] excludedProperties)
     {
         if (obj1 == null || obj2 == null)
             throw new ArgumentNullException("Objects to compare cannot be null.");
 
-        var type = obj1.GetType() == obj2.GetType() ? obj1.GetType() : typeof(T);
-        //var type = typeof(T);
-        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var type = typeof(T);
+        var excludedPropertyPaths = excludedProperties
+            .Select(CreatePropertyPathGetter)
+            .ToList();
 
-        foreach (var property in properties)
+        return CompareObjects(obj1, obj2, excludedPropertyPaths);
+    }
+
+    private static bool CompareObjects(object obj1, object obj2, List<PropertyPathGetter> excludedPropertyPaths)
+    {
+        if (obj1 == null || obj2 == null) return obj1 == obj2;
+
+        var type = obj1.GetType();
+
+        foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (excludedProperties.Contains(property.Name))
+            if (excludedPropertyPaths.Any(getter => getter.PropertyPath.Contains(property)))
                 continue;
 
             var value1 = property.GetValue(obj1);
@@ -37,18 +39,39 @@ public static class ObjectExtensions
             }
             else
             {
-                if (value1 == null || value2 == null)
-                {
-                    if (value1 != value2)
-                        return false;
-                }
-                else if (!value1.EqualsExcept(value2, excludedProperties))
-                {
+                if (!CompareObjects(value1, value2, excludedPropertyPaths))
                     return false;
-                }
             }
         }
 
         return true;
+    }
+
+    private static PropertyPathGetter CreatePropertyPathGetter<T>(Expression<Func<T, object>> property)
+    {
+        if (property.Body is MemberExpression member ||
+            (property.Body is UnaryExpression unary && (member = unary.Operand as MemberExpression) != null))
+        {
+            var propertyPath = new List<PropertyInfo>();
+            while (member != null)
+            {
+                propertyPath.Insert(0, (PropertyInfo)member.Member);
+                member = member.Expression as MemberExpression;
+            }
+
+            return new PropertyPathGetter(propertyPath);
+        }
+
+        throw new InvalidOperationException("The attribute mapping must be a valid attribute expression.");
+    }
+
+    private class PropertyPathGetter
+    {
+        public PropertyPathGetter(List<PropertyInfo> propertyPath)
+        {
+            PropertyPath = propertyPath;
+        }
+
+        public List<PropertyInfo> PropertyPath { get; }
     }
 }

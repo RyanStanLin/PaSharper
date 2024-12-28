@@ -8,6 +8,25 @@ namespace PaSharper.Utilities.File;
 
 public class PDFTextExtractor
 {
+    public List<TextChunk> ExtractTextWithPositions(string pdfPath, int pageNumber)
+    {
+        List<TextChunk> textChunks = new();
+
+        using (var pdfReader = new PdfReader(pdfPath))
+        using (var pdfDocument = new PdfDocument(pdfReader))
+        {
+            if (pageNumber < 1 || pageNumber > pdfDocument.GetNumberOfPages())
+                throw new ArgumentOutOfRangeException(nameof(pageNumber), "Page number is out of range.");
+
+            var strategy = new TextLocationStrategy();
+            PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(pageNumber), strategy);
+
+            textChunks.AddRange(strategy.ObjectResult);
+        }
+
+        return textChunks;
+    }
+
     public class TextChunk
     {
         public string Text { get; set; }
@@ -19,65 +38,40 @@ public class PDFTextExtractor
 
     private class TextLocationStrategy : LocationTextExtractionStrategy
     {
-        public List<TextChunk> ObjectResult { get; } = new List<TextChunk>();
+        public List<TextChunk> ObjectResult { get; } = new();
 
         public override void EventOccurred(IEventData data, EventType type)
         {
             if (!type.Equals(EventType.RENDER_TEXT))
                 return;
 
-            TextRenderInfo renderInfo = (TextRenderInfo)data;
+            var renderInfo = (TextRenderInfo)data;
 
-            string curFont = renderInfo.GetFont().GetFontProgram().ToString();
-            float curFontSize = renderInfo.GetFontSize();
+            var curFont = renderInfo.GetFont().GetFontProgram().ToString();
+            var curFontSize = renderInfo.GetFontSize();
 
             IList<TextRenderInfo> text = renderInfo.GetCharacterRenderInfos();
-            foreach (TextRenderInfo t in text)
+            foreach (var t in text)
             {
-                string letter = t.GetText();
-                Vector letterStart = t.GetBaseline().GetStartPoint();
-                Vector letterEnd = t.GetAscentLine().GetEndPoint();
-                Rectangle letterRect = new Rectangle(
+                var letter = t.GetText();
+                var letterStart = t.GetBaseline().GetStartPoint();
+                var letterEnd = t.GetAscentLine().GetEndPoint();
+                var letterRect = new Rectangle(
                     letterStart.Get(0),
                     letterStart.Get(1),
                     letterEnd.Get(0) - letterStart.Get(0),
                     letterEnd.Get(1) - letterStart.Get(1)
                 );
-                if (letter == "\n")
+                if (letter == "\n") Console.WriteLine("return find!");
+                ObjectResult.Add(new TextChunk
                 {
-                    Console.WriteLine("return find!");
-                }
-                    ObjectResult.Add(new TextChunk
-                    {
-                        Text = letter,
-                        Rect = letterRect,
-                        FontFamily = curFont,
-                        FontSize = curFontSize,
-                        SpaceWidth = t.GetSingleSpaceWidth() / 2f
-                    });
-                
+                    Text = letter,
+                    Rect = letterRect,
+                    FontFamily = curFont,
+                    FontSize = curFontSize,
+                    SpaceWidth = t.GetSingleSpaceWidth() / 2f
+                });
             }
         }
     }
-
-    public List<TextChunk> ExtractTextWithPositions(string pdfPath, int pageNumber)
-    {
-        List<TextChunk> textChunks = new List<TextChunk>();
-
-        using (PdfReader pdfReader = new PdfReader(pdfPath))
-        using (PdfDocument pdfDocument = new PdfDocument(pdfReader))
-        {
-            if (pageNumber < 1 || pageNumber > pdfDocument.GetNumberOfPages())
-                throw new ArgumentOutOfRangeException(nameof(pageNumber), "Page number is out of range.");
-
-            TextLocationStrategy strategy = new TextLocationStrategy();
-            PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(pageNumber), strategy);
-
-            textChunks.AddRange(strategy.ObjectResult);
-        }
-
-        return textChunks;
-    }
-    
-   
 }

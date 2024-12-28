@@ -1,41 +1,41 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using PaSharper.Interfaces;
 using Microsoft.Extensions.Logging;
+using PaSharper.Interfaces;
 
 namespace PaSharper.Utilities.IO;
 
 public class MatchResult<T>
 {
-    public T ParsedData { get; set; }
-    public FileInfo FileDetails { get; set; }
-    public bool IsPerfectMatch { get; set; }
-
     public MatchResult(T parsedData, FileInfo fileDetails, bool isPerfectMatch)
     {
         ParsedData = parsedData;
         FileDetails = fileDetails;
         IsPerfectMatch = isPerfectMatch;
     }
+
+    public T ParsedData { get; set; }
+    public FileInfo FileDetails { get; set; }
+    public bool IsPerfectMatch { get; set; }
 }
 
-class FilePatternMatcher<T> where T : IFileMappable<T>
+internal class FilePatternMatcher<T> where T : IFileMappable<T>
 {
-    private readonly string pattern;
     private readonly Func<Dictionary<string, string>, T> converter;
-    private readonly List<(string keyword, int length, Action<T, object> mapper)> keywords;
     private readonly bool exactMatch;
+    private readonly List<(string keyword, int length, Action<T, object> mapper)> keywords;
     private readonly ILogger<FilePatternMatcher<T>> logger;
+    private readonly string pattern;
 
     public FilePatternMatcher(string inputFormat, T StructClass, bool exactMatch, ILoggerFactory loggerFactory)
     {
         var mappings = StructClass.GetMapping();
-        this.keywords = ExtractKeywords(inputFormat, mappings);
-        this.pattern = BuildRegexPattern(inputFormat, this.keywords, exactMatch);
-        this.converter = CreateConverter(this.keywords);
+        keywords = ExtractKeywords(inputFormat, mappings);
+        pattern = BuildRegexPattern(inputFormat, keywords, exactMatch);
+        converter = CreateConverter(keywords);
         this.exactMatch = exactMatch;
-        this.logger = loggerFactory.CreateLogger<FilePatternMatcher<T>>();
+        logger = loggerFactory.CreateLogger<FilePatternMatcher<T>>();
     }
 
     public IEnumerable<MatchResult<T>> MatchFiles(string folderPath)
@@ -54,23 +54,20 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
                 .ToDictionary(kv => kv.keyword, kv => kv.Value);
 
             var obj = Activator.CreateInstance<T>();
-            bool hasError = false;
+            var hasError = false;
 
             foreach (var (keyword, _, mapper) in keywords)
-            {
                 if (rawData.TryGetValue(keyword, out var value))
-                {
                     try
                     {
                         mapper(obj, value);
                     }
                     catch (Exception ex)
                     {
-                        logger.LogDebug($"Error when handling {keyword} 's value {value}: {ex.Message}, skipping this.");
+                        logger.LogDebug(
+                            $"Error when handling {keyword} 's value {value}: {ex.Message}, skipping this.");
                         hasError = true;
                     }
-                }
-            }
 
             yield return new MatchResult<T>(obj, fileInfo, !hasError);
         }
@@ -83,7 +80,6 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
         var mappingsDict = mappings.ToDictionary(m => m.keyword);
 
         return Regex.Matches(inputFormat, @"\{(\w+)(?::(\d+))?\}")
-            .Cast<Match>()
             .Select<Match, (string keyword, int length, Action<T, object> mapper)>(m =>
             {
                 var keyword = m.Groups[1].Value;
@@ -95,18 +91,18 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
                 var setter = CreateSetter(property);
 
                 return (
-                    keyword: keyword,
+                    keyword,
                     length: m.Groups[2].Success ? int.Parse(m.Groups[2].Value) : -1,
                     mapper: (obj, raw) =>
                     {
                         /*try
                         {*/
-                            var value = transformer((string)raw);
-                            setter(obj, value);
+                        var value = transformer((string)raw);
+                        setter(obj, value);
                         /*}
                         catch (Exception ex)
                         {*/
-                            //logger.LogDebug($"Failed to convert: {keyword} -> {raw}. Error: {ex.Message}. Skipping this.");
+                        //logger.LogDebug($"Failed to convert: {keyword} -> {raw}. Error: {ex.Message}. Skipping this.");
                         //}
                     }
                 );
@@ -114,7 +110,8 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
             .ToList();
     }
 
-    private static string BuildRegexPattern(string inputFormat, IEnumerable<(string keyword, int length, Action<T, object> mapper)> keywords, bool exactMatch)
+    private static string BuildRegexPattern(string inputFormat,
+        IEnumerable<(string keyword, int length, Action<T, object> mapper)> keywords, bool exactMatch)
     {
         var regex = keywords.Aggregate(inputFormat, (current, k) =>
             current.Replace(
@@ -126,8 +123,8 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
 
     private static Action<T, object> CreateSetter(Expression<Func<T, object>> property)
     {
-        if (property.Body is MemberExpression member || 
-            property.Body is UnaryExpression unary && (member = unary.Operand as MemberExpression) != null)
+        if (property.Body is MemberExpression member ||
+            (property.Body is UnaryExpression unary && (member = unary.Operand as MemberExpression) != null))
         {
             var propertyPath = new List<PropertyInfo>();
             while (member != null)
@@ -139,7 +136,7 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
             return (obj, value) =>
             {
                 object currentObject = obj;
-                for (int i = 0; i < propertyPath.Count - 1; i++)
+                for (var i = 0; i < propertyPath.Count - 1; i++)
                 {
                     var propInfo = propertyPath[i];
                     var nextObject = propInfo.GetValue(currentObject);
@@ -148,6 +145,7 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
                         nextObject = Activator.CreateInstance(propInfo.PropertyType);
                         propInfo.SetValue(currentObject, nextObject);
                     }
+
                     currentObject = nextObject;
                 }
 
@@ -159,18 +157,16 @@ class FilePatternMatcher<T> where T : IFileMappable<T>
         throw new InvalidOperationException("The attribute mapping must be a valid attribute expression.");
     }
 
-    private Func<Dictionary<string, string>, T> CreateConverter(IEnumerable<(string keyword, int length, Action<T, object> mapper)> keywordMappings)
+    private Func<Dictionary<string, string>, T> CreateConverter(
+        IEnumerable<(string keyword, int length, Action<T, object> mapper)> keywordMappings)
     {
         return rawData =>
         {
             var instance = Activator.CreateInstance<T>();
             foreach (var (keyword, _, mapper) in keywordMappings)
-            {
                 if (rawData.TryGetValue(keyword, out var value))
-                {
                     mapper(instance, value);
-                }
-            }
+
             return instance;
         };
     }

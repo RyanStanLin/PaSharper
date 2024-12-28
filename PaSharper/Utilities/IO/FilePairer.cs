@@ -4,7 +4,7 @@ namespace PaSharper.Utilities.IO;
 
 public class FilePairer<T> where T : IFilePairable<T>
 {
-    public List<List<T>> PairFiles(IEnumerable<T> files)
+    public (IEnumerable<IEnumerable<T>> pairedFiles, IEnumerable<T> unmatchedFiles) PairFiles(IEnumerable<T> files)
     {
         var pairedFiles = new List<List<T>>();
         var unmatchedFiles = new List<T>(files);
@@ -25,6 +25,12 @@ public class FilePairer<T> where T : IFilePairable<T>
             pairedFiles.Add(group);
         }
 
-        return pairedFiles;
+        foreach (var unmatchedFile in pairedFiles.Where(x => x.Count is 1).ToList())
+        {
+            unmatchedFiles.Add(unmatchedFile.First());
+            pairedFiles.Remove(unmatchedFile);
+        }
+
+        return (pairedFiles.AsEnumerable(), unmatchedFiles.AsEnumerable());
     }
 }
