@@ -1,0 +1,76 @@
+name: .NET Release Workflow
+
+on:
+  push:
+    branches:
+      - "release/*"  # Release 分支
+      - "dev-release"  # Dev-release 分支
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore Dependencies
+      run: dotnet restore
+    - name: Build Project
+      run: dotnet build --no-restore
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: |
+      startsWith(github.ref, 'refs/heads/release/') ||
+      github.ref == 'refs/heads/dev-release'
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Get Current Version and Calculate Release Version
+      run: |
+        latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
+        
+        IFS='.' read -r major minor patch <<<"${latest_tag//v/}"
+        new_patch=$((patch+1))
+
+        if [[ "${GITHUB_REF}" == "refs/heads/dev-release" ]]; then
+          latest_dev_tag=$(git tag -l "Dev-v$major.$minor.*" | sort -V | tail -n 1)
+          if [[ -z "$latest_dev_tag" ]]; then
+            new_dev_version="$major.$minor.0-dev-1"
+          else
+            latest_dev_patch=$(echo "$latest_dev_tag" | sed -E 's/.*-([0-9]+)$/\1/')
+            new_dev_version="$major.$minor.$new_patch-dev-$(($latest_dev_patch + 1))"
+          fi
+          new_version="Dev-v$new_dev_version"
+          pre_release="--prerelease"
+        else
+          new_version="v$major.$minor.$new_patch"
+          pre_release=""
+        fi
+
+        echo "New Version: $new_version"
+        echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
+        echo "PRE_RELEASE=$pre_release" >> $GITHUB_ENV
+
+    - name: Create GitHub Release
+      run: |
+        version=$NEW_VERSION
+        release_name="Release $version"
+        release_notes=$(git log -1 --pretty=%B)
+
+        gh auth login --with-token ${{ secrets.GITHUB_TOKEN }}
+        gh release create "$version" ./bin/Debug/net8.0/* --title "$release_name" --notes "$release_notes" $PRE_RELEASE
+
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
