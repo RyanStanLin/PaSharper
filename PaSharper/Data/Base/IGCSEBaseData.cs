@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 using PaSharper.Extensions;
 using PaSharper.Interfaces;
 
-namespace PaSharper.Data;
+namespace PaSharper.Data.Base;
 
 public class IgcseExamFileInfo : IFileMappable<IgcseExamFileInfo>, IFilePairable<IgcseExamFileInfo>
 {
