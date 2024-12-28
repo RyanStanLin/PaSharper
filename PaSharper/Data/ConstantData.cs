@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace PaSharper.Data;
 
 public static class ConstantData

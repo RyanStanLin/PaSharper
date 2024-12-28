@@ -1,12 +1,15 @@
 using System.ComponentModel;
 using System.Linq.Expressions;
 using PaSharper.Interfaces;
-using PaSharper.Tools;
+using PaSharper.Extensions;
+
+namespace PaSharper.Data;
 
 public class IgcseExamFileInfo : IFileMappable<IgcseExamFileInfo>, IFilePairable<IgcseExamFileInfo>
 {
     public IgcseSubject Subject { get; set; }
     public IgcsePaperType FileType { get; set; }
+    public FileInfo File { get; set; }
     public IgcseExamTime ExamTime { get; set; }
     public short PaperNumber { get; set; }
     public short PaperVersion { get; set; }
@@ -42,7 +45,7 @@ public class IgcseExamFileInfo : IFileMappable<IgcseExamFileInfo>, IFilePairable
     
     public bool CanPairWith(IgcseExamFileInfo other)
     {
-        return this.EqualsExcept(other, nameof(FileType)) && this.FileType != other.FileType;
+        return this.EqualsExcept<IgcseExamFileInfo>(other, nameof(FileType),nameof(File)) && this.FileType != other.FileType;
     }
 }
 

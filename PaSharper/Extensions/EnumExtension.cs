@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace PaSharper.Tools;
+namespace PaSharper.Extensions;
 
 public static class EnumExtension
 {

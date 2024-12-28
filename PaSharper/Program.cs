@@ -1,7 +1,7 @@
-﻿using System.Linq.Expressions;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using PaSharper.Data;
-using PaSharper.Tools;
+using PaSharper.Extensions;
+using PaSharper.Utilities.IO;
 
 namespace PaSharper;
 
@@ -9,7 +9,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        TitlePrinter.PrintTitle();
+        Console.WriteLine(Data.ConstantData.PASHARPER_TITLE);
         
         string folderPath = null;
         string inputFormat = null;
@@ -37,10 +37,15 @@ class Program
                 exactMatch: false,
                 loggerFactory
             );
-            foreach (var result in matcher.MatchFiles(folderPath).Where(x=> x.IsPerfectMatch == true))
+            var results = matcher.MatchFiles(folderPath)
+                .Where(x => x.IsPerfectMatch == true)
+                .ThenForEach(result => result.ParsedData.File = result.FileDetails);
+            foreach (var result in results)
             {
                 Console.WriteLine($"\n[{result.ParsedData.FileType.ToCustomString()}]{result.ParsedData.Subject.SubjectID}-{result.ParsedData.ExamTime.Year}{result.ParsedData.ExamTime.Season.ToCustomString()}-" +
                                   $"{result.ParsedData.PaperNumber}{result.ParsedData.PaperVersion}卷:");
+                
+                //igPairer.PairFiles(result);
                 /*PDFTextExtractor extractor = new PDFTextExtractor();
                 List<PDFTextExtractor.TextChunk> textChunks = extractor.ExtractTextWithPositions(result.FileDetails.FullName, 1);
 
@@ -49,6 +54,10 @@ class Program
                     Console.Write(textChunk.Text);
                 }*/
             }
+
+            FilePairer<IgcseExamFileInfo> igPairer = new FilePairer<IgcseExamFileInfo>();
+            var pairFiles = igPairer.PairFiles(results.ExtractItems<MatchResult<IgcseExamFileInfo>,IgcseExamFileInfo>(x => x.ParsedData, loggerFactory));
+            
         }
     }
 }
