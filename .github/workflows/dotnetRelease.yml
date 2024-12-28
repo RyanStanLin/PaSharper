@@ -3,7 +3,7 @@ name: .NET Release Workflow
 on:
   push:
     branches:
-      - "main"  # Release 分支
+      - "release"  # Release 分支
       - "dev-release"  # Dev-release 分支
 
 jobs:
