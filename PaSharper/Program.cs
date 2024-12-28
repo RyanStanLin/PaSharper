@@ -55,7 +55,7 @@ internal class Program
                 igPairer.PairFiles(
                     results.ExtractItems<MatchResult<IgcseExamFileInfo>, IgcseExamFileInfo>(x => x.ParsedData,
                         loggerFactory));
-            Console.WriteLine(pairFiles.pairedFiles.Count());
+            Console.WriteLine(pairFiles.pairedFiles.Count()+1);
         }
     }
 }
