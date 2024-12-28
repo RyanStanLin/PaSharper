@@ -2,7 +2,9 @@ name: .NET Release Workflow
 
 on:
   push:
-    branches: [ "release","dev-release" ]
+    branches:
+      - "release/*"  # Release 分支
+      - "dev-release"  # Dev-release 分支
 
 jobs:
   build:
@@ -37,22 +39,28 @@ jobs:
 
     - name: Get Current Version and Calculate Release Version
       run: |
+        # 获取最新的Git标签作为版本号
         latest_tag=$(git describe --tags --abbrev=0 || echo "v0.0.0")
         
+        # 增加版本号 (基于 git 标签)
         IFS='.' read -r major minor patch <<<"${latest_tag//v/}"
         new_patch=$((patch+1))
 
+        # 根据不同分支控制版本号
         if [[ "${GITHUB_REF}" == "refs/heads/dev-release" ]]; then
+          # 如果是 dev-release 分支，加上 dev 前缀并递增dev版本号
+          # 获取最近一个dev版本
           latest_dev_tag=$(git tag -l "Dev-v$major.$minor.*" | sort -V | tail -n 1)
           if [[ -z "$latest_dev_tag" ]]; then
-            new_dev_version="$major.$minor.0-dev-1"
+            new_dev_version="$major.$minor.0-dev-1"  # 如果没有找到，初始化dev版本
           else
             latest_dev_patch=$(echo "$latest_dev_tag" | sed -E 's/.*-([0-9]+)$/\1/')
-            new_dev_version="$major.$minor.$new_patch-dev-$(($latest_dev_patch + 1))"
+            new_dev_version="$major.$minor.$new_patch-dev-$(($latest_dev_patch + 1))"  # 递增 dev 版本号
           fi
           new_version="Dev-v$new_dev_version"
           pre_release="--prerelease"
         else
+          # 如果是 release 分支，正常版本号，无需前缀
           new_version="v$major.$minor.$new_patch"
           pre_release=""
         fi
@@ -65,10 +73,10 @@ jobs:
       run: |
         version=$NEW_VERSION
         release_name="Release $version"
-        release_notes=$(git log -1 --pretty=%B)
+        release_notes=$(git log -1 --pretty=%B)  # 使用最新commit的message作为release note
 
-        gh auth login --with-token ${{ secrets.GITHUB_TOKEN }}
+        # 创建 GitHub Release
         gh release create "$version" ./bin/Debug/net8.0/* --title "$release_name" --notes "$release_notes" $PRE_RELEASE
 
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.ACTION_TOKEN }}  # 这里用的是从 GitHub Secrets 读取的 token
