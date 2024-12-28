@@ -2,9 +2,23 @@ using PaSharper.Interfaces;
 
 namespace PaSharper.Utilities.IO;
 
+public class PairResult<T>
+{
+    public PairResult(IEnumerable<IEnumerable<T>> pairedFiles, IEnumerable<T> unmatchedFiles, bool isAllPerfectPaired)
+    {
+        PairedFiles = pairedFiles;
+        UnmatchedFiles = unmatchedFiles;
+        IsAllPerfectPaired = isAllPerfectPaired;
+    }
+
+    public IEnumerable<IEnumerable<T>> PairedFiles { get; set; }
+    public IEnumerable<T> UnmatchedFiles { get; set; }
+    public bool IsAllPerfectPaired { get; set; }
+}
+
 public class FilePairer<T> where T : IFilePairable<T>
 {
-    public (IEnumerable<IEnumerable<T>> pairedFiles, IEnumerable<T> unmatchedFiles) PairFiles(IEnumerable<T> files)
+    public PairResult<T> PairFiles(IEnumerable<T> files)
     {
         var pairedFiles = new List<List<T>>();
         var unmatchedFiles = new List<T>(files);
@@ -31,6 +45,6 @@ public class FilePairer<T> where T : IFilePairable<T>
             pairedFiles.Remove(unmatchedFile);
         }
 
-        return (pairedFiles.AsEnumerable(), unmatchedFiles.AsEnumerable());
+        return new PairResult<T>(pairedFiles, unmatchedFiles, !unmatchedFiles.Any());
     }
 }

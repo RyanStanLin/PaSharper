@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using PaSharper.Data;
+using PaSharper.Data.Base;
 using PaSharper.Extensions;
 using PaSharper.Utilities.IO;
+using PaSharper.Utilities.WorkFlow.Implements;
 
 namespace PaSharper;
 
@@ -38,10 +40,16 @@ internal class Program
             var results = matcher.MatchFiles(folderPath)
                 .Where(x => x.IsPerfectMatch)
                 .ThenForEach(result => result.ParsedData.File = result.FileDetails);
-            foreach (var result in results)
+            
+            var workflow = new IgcseExamWorkflow();
+
+            // 执行工作流
+            workflow.Execute(results);
+            
+            /*foreach (var result in results)
                 Console.WriteLine(
                     $"\n[{result.ParsedData.FileType.ToCustomString()}]{result.ParsedData.Subject.SubjectID}-{result.ParsedData.ExamTime.Year}{result.ParsedData.ExamTime.Season.ToCustomString()}-" +
-                    $"{result.ParsedData.PaperNumber}{result.ParsedData.PaperVersion}卷:");
+                    $"{result.ParsedData.PaperNumber}{result.ParsedData.PaperVersion}卷:");*/
             //igPairer.PairFiles(result);
             /*PDFTextExtractor extractor = new PDFTextExtractor();
                 List<PDFTextExtractor.TextChunk> textChunks = extractor.ExtractTextWithPositions(result.FileDetails.FullName, 1);
@@ -50,12 +58,12 @@ internal class Program
                 {
                     Console.Write(textChunk.Text);
                 }*/
-            FilePairer<IgcseExamFileInfo> igPairer = new();
+            /*FilePairer<IgcseExamFileInfo> igPairer = new();
             var pairFiles =
                 igPairer.PairFiles(
                     results.ExtractItems<MatchResult<IgcseExamFileInfo>, IgcseExamFileInfo>(x => x.ParsedData,
-                        loggerFactory));
-            Console.WriteLine(pairFiles.pairedFiles.Count());
+                        loggerFactory));*/
+            
         }
     }
 }

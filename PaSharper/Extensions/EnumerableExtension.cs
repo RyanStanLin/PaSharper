@@ -16,14 +16,11 @@ public static class IEnumerableExtensions
     /// <returns>An IEnumerable of extracted properties of type <typeparamref name="TTarget" />.</returns>
     public static IEnumerable<TTarget> ExtractItems<TSource, TTarget>(
         this IEnumerable<TSource> source,
-        Func<TSource, TTarget> extractor,
-        ILoggerFactory loggerFactory)
+        Func<TSource, TTarget> extractor)
     {
         if (source == null) throw new ArgumentNullException(nameof(source));
         if (extractor == null) throw new ArgumentNullException(nameof(extractor));
-        if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
-
-        var logger = loggerFactory.CreateLogger(nameof(ExtractItems));
+        //if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
 
         foreach (var item in source)
         {
@@ -34,7 +31,7 @@ public static class IEnumerableExtensions
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, $"Error extracting property from item: {item}");
+                throw new Exception($"Error extracting property from item: {item}");
             }
 
             if (result != null) yield return result;
