@@ -3,10 +3,11 @@ using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Data;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
+using PaSharper.Interfaces;
 
 namespace PaSharper.Utilities.File;
 
-public class PDFTextExtractor
+public class PdfTextExtractor
 {
     public List<TextChunk> ExtractTextWithPositions(string pdfPath, int pageNumber)
     {
@@ -19,7 +20,7 @@ public class PDFTextExtractor
                 throw new ArgumentOutOfRangeException(nameof(pageNumber), "Page number is out of range.");
 
             var strategy = new TextLocationStrategy();
-            PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(pageNumber), strategy);
+            iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor.GetTextFromPage(pdfDocument.GetPage(pageNumber), strategy);
 
             textChunks.AddRange(strategy.ObjectResult);
         }
@@ -27,7 +28,7 @@ public class PDFTextExtractor
         return textChunks;
     }
 
-    public class TextChunk
+    public class TextChunk: ITextChunk<TextChunk>
     {
         public string Text { get; set; }
         public Rectangle Rect { get; set; }

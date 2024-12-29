@@ -19,6 +19,7 @@ public class ExamSystemLibrary
 public class Subject
 {
     public int SubjectId { get; set; } // 主键
+    public string SubjectIndex { get; set; }//index
     public int ExamSystemId { get; set; } // 外键，指向 ExamSystem
     public string Name { get; set; } // 科目名称
     public string Description { get; set; } // 科目描述
@@ -77,6 +78,8 @@ public class Question
     public int QuestionId { get; set; } // 主键
     public int ExamPaperId { get; set; } // 外键，指向 ExamPaper
     public string AISummary { get; set; } // AI 自动总结字段
+    public string IndexText { get; set; } // 索引字段
+    public int TotalMark { get; set; } // 总分
 
     // 导航属性：指向所属的试卷
     public ExamPaper ExamPaper { get; set; }

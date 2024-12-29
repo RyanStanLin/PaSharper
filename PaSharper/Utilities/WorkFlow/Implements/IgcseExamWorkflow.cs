@@ -26,6 +26,6 @@ public class IgcseExamWorkflow: IWorkflow<IgcseExamFileInfo>
 
     public void Execute(IEnumerable<MatchResult<IgcseExamFileInfo>> input)
     {
-        _pipelineExecutor.Execute<IEnumerable<MatchResult<IgcseExamFileInfo>>,object>(input);
+        var result = _pipelineExecutor.Execute<IEnumerable<MatchResult<IgcseExamFileInfo>>,object>(input);
     }
 }
